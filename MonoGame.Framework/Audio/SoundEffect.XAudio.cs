@@ -163,7 +163,7 @@ namespace Microsoft.Xna.Framework.Audio
         {
             SourceVoice voice = null;
             if (Device != null)
-                voice = new SourceVoice(Device, _format, VoiceFlags.None, XAudio2.MaximumFrequencyRatio);
+                voice = new SourceVoice(Device, _format, VoiceFlags.None, XAudio2.MaximumFrequencyRatio, false);
 
             inst._voice = voice;
         }

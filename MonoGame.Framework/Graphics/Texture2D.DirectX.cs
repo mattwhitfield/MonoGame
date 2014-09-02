@@ -26,10 +26,9 @@ namespace Microsoft.Xna.Framework.Graphics
 
         private bool _renderTarget;
         private bool _mipmap;
-        private void PlatformConstruct(int width, int height, bool mipmap, SurfaceFormat format, SurfaceType type, bool shared)
+        private void PlatformConstruct(int width, int height, bool mipmap, SurfaceFormat format, SurfaceType type, bool shared, int preferredMultiSampleCount)
         {
             _shared = shared;
-
             _renderTarget = (type == SurfaceType.RenderTarget);
             _mipmap = mipmap;
 
@@ -323,6 +322,7 @@ namespace Microsoft.Xna.Framework.Graphics
         }
 
         static SharpDX.WIC.ImagingFactory imgfactory = null;
+
         private static SharpDX.WIC.BitmapSource LoadBitmap(Stream stream, out SharpDX.WIC.BitmapDecoder decoder)
         {
             if (imgfactory == null)
@@ -360,8 +360,9 @@ namespace Microsoft.Xna.Framework.Graphics
             desc.Format = SharpDXHelper.ToFormat(_format);
             desc.BindFlags = SharpDX.Direct3D11.BindFlags.ShaderResource;
             desc.CpuAccessFlags = SharpDX.Direct3D11.CpuAccessFlags.None;
+
             desc.SampleDescription.Count = 1;
-            desc.SampleDescription.Quality = 0;
+            desc.SampleDescription.Quality = 0;                
             desc.Usage = SharpDX.Direct3D11.ResourceUsage.Default;
             desc.OptionFlags = SharpDX.Direct3D11.ResourceOptionFlags.None;
 

@@ -28,21 +28,26 @@ namespace Microsoft.Xna.Framework.Graphics
         }
 
         public Texture2D(GraphicsDevice graphicsDevice, int width, int height)
-            : this(graphicsDevice, width, height, false, SurfaceFormat.Color, SurfaceType.Texture, false)
+            : this(graphicsDevice, width, height, false, SurfaceFormat.Color, SurfaceType.Texture, false, 1)
         {
         }
 
         public Texture2D(GraphicsDevice graphicsDevice, int width, int height, bool mipmap, SurfaceFormat format)
-            : this(graphicsDevice, width, height, mipmap, format, SurfaceType.Texture, false)
+            : this(graphicsDevice, width, height, mipmap, format, SurfaceType.Texture, false, 1)
         {
         }
 
         internal Texture2D(GraphicsDevice graphicsDevice, int width, int height, bool mipmap, SurfaceFormat format, SurfaceType type)
-            : this(graphicsDevice, width, height, mipmap, format, type, false)
+            : this(graphicsDevice, width, height, mipmap, format, type, false, 1)
         {
         }
 
         protected Texture2D(GraphicsDevice graphicsDevice, int width, int height, bool mipmap, SurfaceFormat format, SurfaceType type, bool shared)
+            : this(graphicsDevice, width, height, mipmap, format, type, shared, 1)
+        {
+        }
+
+        protected Texture2D(GraphicsDevice graphicsDevice, int width, int height, bool mipmap, SurfaceFormat format, SurfaceType type, bool shared, int preferredMultiSampleCount)
 		{
             if (graphicsDevice == null)
                 throw new ArgumentNullException("Graphics Device Cannot Be Null");
@@ -57,7 +62,7 @@ namespace Microsoft.Xna.Framework.Graphics
 		    if (type == SurfaceType.SwapChainRenderTarget)
 		        return;
 
-            PlatformConstruct(width, height, mipmap, format, type, shared);
+            PlatformConstruct(width, height, mipmap, format, type, shared, preferredMultiSampleCount);
         }
 
         public int Width

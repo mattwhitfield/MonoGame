@@ -36,6 +36,10 @@ namespace Microsoft.Xna.Framework.Graphics
         internal SharpDX.Direct3D11.RenderTargetView _renderTargetView;
         internal SharpDX.Direct3D11.DepthStencilView _depthStencilView;
 
+        SharpDX.DXGI.Format _msaaTargetBufferFormat;
+        SharpDX.Direct3D11.Texture2D _msaaTargetBuffer;
+        SharpDX.Direct3D11.Texture2D _backBuffer;
+
 #if WINDOWS_STOREAPP
 
         // Declare Direct2D Objects
@@ -71,6 +75,7 @@ namespace Microsoft.Xna.Framework.Graphics
         private readonly Dictionary<int, DynamicVertexBuffer> _userVertexBuffers = new Dictionary<int, DynamicVertexBuffer>();
 
         private readonly Dictionary<IndexElementSize, DynamicIndexBuffer> _userIndexBuffers = new Dictionary<IndexElementSize, DynamicIndexBuffer>();
+        FeatureLevel _featureLevel;
 
 #if WINDOWS_STOREAPP
 
@@ -285,6 +290,8 @@ namespace Microsoft.Xna.Framework.Graphics
             }
 #endif
 
+            _featureLevel = _d3dDevice.FeatureLevel;
+
             // Get Direct3D 11.1 context
             _d3dContext = _d3dDevice.ImmediateContext.QueryInterface<SharpDX.Direct3D11.DeviceContext1>();
 
@@ -295,6 +302,23 @@ namespace Microsoft.Xna.Framework.Graphics
             // Create Direct2D context
             _d2dContext = new SharpDX.Direct2D1.DeviceContext(_d2dDevice, SharpDX.Direct2D1.DeviceContextOptions.None);
         }
+
+        int ResolveAllowedMultiSampleCount(int multiSampleCount, Format format, out int qualityLevel)
+        {
+            if (multiSampleCount > 16)
+            {
+                multiSampleCount = 16;
+            }
+            qualityLevel = _d3dDevice.CheckMultisampleQualityLevels(format, multiSampleCount);
+            while (qualityLevel <= 0 && multiSampleCount > 1)
+            {
+                multiSampleCount--;
+                qualityLevel = _d3dDevice.CheckMultisampleQualityLevels(format, multiSampleCount);
+            }
+            return multiSampleCount;
+        }
+
+        public SampleDescription MultiSampleDescription { get; private set; }
 
         internal void CreateSizeDependentResources()
         {
@@ -316,6 +340,16 @@ namespace Microsoft.Xna.Framework.Graphics
             {
                 _bitmapTarget.Dispose();
                 _bitmapTarget = null;
+            }
+            if (_msaaTargetBuffer != null)
+            {
+                _msaaTargetBuffer.Dispose();
+                _msaaTargetBuffer = null;
+            }
+            if (_backBuffer != null)
+            {
+                _backBuffer.Dispose();
+                _backBuffer = null;
             }
 
 			// Clear the current render targets.
@@ -348,20 +382,48 @@ namespace Microsoft.Xna.Framework.Graphics
                 {
                     _swapChain.Dispose();
                     _swapChain = null;
-                }                
-            }
-
-            var multisampleDesc = new SharpDX.DXGI.SampleDescription(1, 0);
-            if ( PresentationParameters.MultiSampleCount > 1 )
-            {
-                multisampleDesc.Count = PresentationParameters.MultiSampleCount;
-                multisampleDesc.Quality = (int)SharpDX.Direct3D11.StandardMultisampleQualityLevels.StandardMultisamplePattern;
+                }
             }
 
             // Use BGRA for the swap chain.
-            var format = PresentationParameters.BackBufferFormat == SurfaceFormat.Color ? 
-                            SharpDX.DXGI.Format.B8G8R8A8_UNorm : 
+            var format = PresentationParameters.BackBufferFormat == SurfaceFormat.Color ?
+                            Format.B8G8R8A8_UNorm :
                             SharpDXHelper.ToFormat(PresentationParameters.BackBufferFormat);
+
+            var multisampleDesc = new SampleDescription(1, 0);
+            if ( PresentationParameters.MultiSampleCount > 1 )
+            {
+                int quality;
+                multisampleDesc.Count = ResolveAllowedMultiSampleCount(PresentationParameters.MultiSampleCount, format, out quality);
+                if (multisampleDesc.Count > 1)
+                {
+                    if (_featureLevel < FeatureLevel.Level_10_1)
+                    {
+                        multisampleDesc.Quality = quality - 1;
+                    }
+                    else
+                    {
+                        multisampleDesc.Quality = (int)SharpDX.Direct3D11.StandardMultisampleQualityLevels.StandardMultisamplePattern;
+                    }
+
+                    var desc = new SharpDX.Direct3D11.Texture2DDescription();
+                    desc.Width = PresentationParameters.BackBufferWidth;
+                    desc.Height = PresentationParameters.BackBufferHeight;
+                    desc.MipLevels = 1;
+                    desc.ArraySize = 1;
+                    desc.Format = format;
+                    desc.BindFlags = SharpDX.Direct3D11.BindFlags.RenderTarget;
+                    desc.CpuAccessFlags = SharpDX.Direct3D11.CpuAccessFlags.None;
+                    desc.SampleDescription = multisampleDesc;
+                    desc.Usage = SharpDX.Direct3D11.ResourceUsage.Default;
+                    desc.OptionFlags = SharpDX.Direct3D11.ResourceOptionFlags.None;
+
+                    _msaaTargetBufferFormat = format;
+                    _msaaTargetBuffer = new SharpDX.Direct3D11.Texture2D(_d3dDevice, desc);
+                }
+            }
+
+            MultiSampleDescription = multisampleDesc;
 
             // If the swap chain already exists... update it.
             if (_swapChain != null)
@@ -384,7 +446,7 @@ namespace Microsoft.Xna.Framework.Graphics
                     Height = PresentationParameters.BackBufferHeight,
                     Format = format,
                     Stereo = false,
-                    SampleDescription = multisampleDesc,
+                    SampleDescription = new SampleDescription(1, 0),
                     Usage = SharpDX.DXGI.Usage.RenderTargetOutput,
                     BufferCount = 2,
                     SwapEffect = SharpDXHelper.ToSwapEffect(PresentationParameters.PresentationInterval),
@@ -429,16 +491,31 @@ namespace Microsoft.Xna.Framework.Graphics
 
             _swapChain.Rotation = SharpDX.DXGI.DisplayModeRotation.Identity;
 
+
             // Obtain the backbuffer for this window which will be the final 3D rendertarget.
             Point targetSize;
-            using (var backBuffer = SharpDX.Direct3D11.Texture2D.FromSwapChain<SharpDX.Direct3D11.Texture2D>(_swapChain, 0))
+            if (_msaaTargetBuffer != null)
             {
-                // Create a view interface on the rendertarget to use on bind.
-                _renderTargetView = new SharpDX.Direct3D11.RenderTargetView(_d3dDevice, backBuffer);
+                _backBuffer = SharpDX.Direct3D11.Resource.FromSwapChain<SharpDX.Direct3D11.Texture2D>(_swapChain, 0);
+
+                // Create a view interface on the MSAA back buffer.
+                _renderTargetView = new SharpDX.Direct3D11.RenderTargetView(_d3dDevice, _msaaTargetBuffer);
 
                 // Get the rendertarget dimensions for later.
-                var backBufferDesc = backBuffer.Description;
+                var backBufferDesc = _backBuffer.Description;
                 targetSize = new Point(backBufferDesc.Width, backBufferDesc.Height);
+            }
+            else
+            {
+                using (var backBuffer = SharpDX.Direct3D11.Texture2D.FromSwapChain<SharpDX.Direct3D11.Texture2D>(_swapChain, 0))
+                {
+                    // Create a view interface on the rendertarget to use on bind.
+                    _renderTargetView = new SharpDX.Direct3D11.RenderTargetView(_d3dDevice, backBuffer);
+
+                    // Get the rendertarget dimensions for later.
+                    var backBufferDesc = backBuffer.Description;
+                    targetSize = new Point(backBufferDesc.Width, backBufferDesc.Height);
+                }
             }
 
             // Create the depth buffer if we need it.
@@ -792,6 +869,16 @@ namespace Microsoft.Xna.Framework.Graphics
                 _bitmapTarget.Dispose();
                 _depthStencilView = null;
             }
+            if (_msaaTargetBuffer != null)
+            {
+                _msaaTargetBuffer.Dispose();
+                _msaaTargetBuffer = null;
+            }
+            if (_backBuffer != null)
+            {
+                _backBuffer.Dispose();
+                _backBuffer = null;
+            }
             if (_d2dDevice != null)
             {
                 _d2dDevice.Dispose();
@@ -837,7 +924,13 @@ namespace Microsoft.Xna.Framework.Graphics
                 // to sleep until the next VSync. This ensures we don't waste any cycles rendering
                 // frames that will never be displayed to the screen.
                 lock (_d3dContext)
+                {
+                    if (_msaaTargetBuffer != null)
+                    {
+                        _d3dContext.ResolveSubresource(_msaaTargetBuffer, 0, _backBuffer, 0, _msaaTargetBufferFormat);
+                    }
                     _swapChain.Present(1, PresentFlags.None, parameters);
+                }
             }
             catch (SharpDX.SharpDXException)
             {
@@ -1012,7 +1105,7 @@ namespace Microsoft.Xna.Framework.Graphics
 
             if (_indexBufferDirty)
             {
-                if (_indexBuffer != null)
+                if (_indexBuffer != null && !_indexBuffer.IsDisposed)
                 {
                     _d3dContext.InputAssembler.SetIndexBuffer(
                         _indexBuffer.Buffer,
@@ -1025,7 +1118,7 @@ namespace Microsoft.Xna.Framework.Graphics
 
             if (_vertexBufferDirty)
             {
-                if (_vertexBuffer != null)
+                if (_vertexBuffer != null && !_vertexBuffer.IsDisposed)
                     _d3dContext.InputAssembler.SetVertexBuffers(0, _vertexBuffer.Binding);
                 else
                     _d3dContext.InputAssembler.SetVertexBuffers(0);

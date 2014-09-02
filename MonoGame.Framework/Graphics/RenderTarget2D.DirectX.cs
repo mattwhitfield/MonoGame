@@ -2,6 +2,7 @@
 // This file is subject to the terms and conditions defined in
 // file 'LICENSE.txt', which is part of this source code package.
 
+using SharpDX.DXGI;
 using SharpDX.Direct3D11;
 
 namespace Microsoft.Xna.Framework.Graphics
@@ -30,12 +31,7 @@ namespace Microsoft.Xna.Framework.Graphics
                 return;
 
             // Setup the multisampling description.
-            var multisampleDesc = new SharpDX.DXGI.SampleDescription(1, 0);
-            if (MultiSampleCount > 1)
-            {
-                multisampleDesc.Count = MultiSampleCount;
-                multisampleDesc.Quality = (int)StandardMultisampleQualityLevels.StandardMultisamplePattern;
-            }
+            var multisampleDesc = new SampleDescription(1, 0);
 
             // Create a descriptor for the depth/stencil buffer.
             // Allocate a 2-D surface as the depth/stencil buffer.
