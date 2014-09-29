@@ -118,8 +118,14 @@ namespace Microsoft.Xna.Framework.Graphics
         {
 #if WINDOWS_PHONE
 
-            UpdateDevice(DrawingSurfaceState.Device, DrawingSurfaceState.Context);
-            UpdateTarget(DrawingSurfaceState.RenderTargetView);
+            if (DrawingSurfaceState.Device != null && DrawingSurfaceState.Context != null)
+            {
+                UpdateDevice(DrawingSurfaceState.Device, DrawingSurfaceState.Context);
+            }
+            if (DrawingSurfaceState.RenderTargetView != null)
+            {
+                UpdateTarget(DrawingSurfaceState.RenderTargetView);
+            }
 
             DrawingSurfaceState.Device = null;
             DrawingSurfaceState.Context = null;
@@ -148,20 +154,41 @@ namespace Microsoft.Xna.Framework.Graphics
         private void UpdateDevice(Device device, DeviceContext context)
         {
             // TODO: Lost device logic!
-            SharpDX.Utilities.Dispose(ref _d3dDevice);
+            try
+            {
+                SharpDX.Utilities.Dispose(ref _d3dDevice);
+            }
+            catch (NullReferenceException)
+            { }
             _d3dDevice = device;
 
-            SharpDX.Utilities.Dispose(ref _d3dContext);
+            try
+            {
+                SharpDX.Utilities.Dispose(ref _d3dContext);
+            }
+            catch (NullReferenceException)
+            { }
             _d3dContext = context;
 
-            SharpDX.Utilities.Dispose(ref _depthStencilView);
-
-            using (var dxgiDevice2 = device.QueryInterface<SharpDX.DXGI.Device2>())
+            try
             {
-                // Ensure that DXGI does not queue more than one frame at a time. This both reduces 
-                // latency and ensures that the application will only render after each VSync, minimizing 
-                // power consumption.
-                dxgiDevice2.MaximumFrameLatency = 1;
+                SharpDX.Utilities.Dispose(ref _depthStencilView);
+            }
+            catch (NullReferenceException)
+            { }
+
+            if (device != null)
+            {
+                using (var dxgiDevice2 = device.QueryInterface<SharpDX.DXGI.Device2>())
+                {
+                    if (dxgiDevice2 != null)
+                    {
+                        // Ensure that DXGI does not queue more than one frame at a time. This both reduces 
+                        // latency and ensures that the application will only render after each VSync, minimizing 
+                        // power consumption.
+                        dxgiDevice2.MaximumFrameLatency = 1;
+                    }
+                }
             }
         }
 

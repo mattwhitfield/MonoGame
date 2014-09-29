@@ -62,6 +62,7 @@ namespace MonoGame.Framework.WindowsPhone
                 // DeviceReset events
                 _game.graphicsDeviceManager.OnDeviceReset(EventArgs.Empty);
                 _game.GraphicsDevice.OnDeviceReset();
+                _game.GraphicsDevice.Initialize();
             }
 
             _game.GraphicsDevice.UpdateTarget(renderTargetView);

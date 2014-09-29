@@ -43,9 +43,10 @@ using System.IO;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
-using Lz4;
+//using Lz4;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Utilities;
 using Path = System.IO.Path;
 using System.Diagnostics;
 

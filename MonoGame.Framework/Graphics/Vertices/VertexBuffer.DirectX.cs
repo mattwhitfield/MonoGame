@@ -49,6 +49,11 @@ namespace Microsoft.Xna.Framework.Graphics
                 usage = SharpDX.Direct3D11.ResourceUsage.Dynamic;
             }
 
+            if (GraphicsDevice._d3dDevice.NativePointer == IntPtr.Zero)
+            {
+                return;
+            }
+
             _buffer = new SharpDX.Direct3D11.Buffer(GraphicsDevice._d3dDevice,
                                                         VertexDeclaration.VertexStride * VertexCount,
                                                         usage,
@@ -64,6 +69,10 @@ namespace Microsoft.Xna.Framework.Graphics
         private void PlatformGetData<T>(int offsetInBytes, T[] data, int startIndex, int elementCount, int vertexStride) where T : struct
         {
             GenerateIfRequired();
+            if (GraphicsDevice._d3dDevice.NativePointer == IntPtr.Zero)
+            {
+                return;
+            }
 
             if (_isDynamic)
             {
@@ -115,6 +124,10 @@ namespace Microsoft.Xna.Framework.Graphics
         private void PlatformSetDataInternal<T>(int offsetInBytes, T[] data, int startIndex, int elementCount, int vertexStride, SetDataOptions options, int bufferSize, int elementSizeInBytes) where T : struct
         {
             GenerateIfRequired();
+            if (GraphicsDevice._d3dDevice.NativePointer == IntPtr.Zero)
+            {
+                return;
+            }
 
             if (_isDynamic)
             {
