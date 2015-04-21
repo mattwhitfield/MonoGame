@@ -4,20 +4,15 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Drawing.Design;
 using System.IO;
-using System.Windows.Forms.Design;
 using Microsoft.Xna.Framework.Content.Pipeline;
 using Microsoft.Xna.Framework.Graphics;
 
 namespace MonoGame.Tools.Pipeline
 {
-    internal class PipelineProject : IProjectItem
+    public class PipelineProject : IProjectItem
     {        
-        public IController Controller;      
-  
         public string OriginalPath { get; set; }
 
         public List<ContentItem> ContentItems { get; private set; }                
@@ -63,6 +58,9 @@ namespace MonoGame.Tools.Pipeline
 
         [Browsable(false)]
         public string Icon { get; set; }
+
+        [Browsable(false)]
+        public bool Exists { get; set; }
 
         #endregion
 

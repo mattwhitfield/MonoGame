@@ -7,7 +7,12 @@ using System.Collections.Generic;
 
 namespace MonoGame.Tools.Pipeline
 {
-    interface IController
+    public interface IContentItemObserver
+    {
+        void OnItemModified(ContentItem item);
+    }
+
+    interface IController : IContentItemObserver
     {
         /// <summary>
         /// Types of content which can be created and added to a project. 
@@ -39,7 +44,7 @@ namespace MonoGame.Tools.Pipeline
         /// <summary>
         /// The view this controller is attached to.
         /// </summary>
-        IView View { get; set; }
+        IView View { get; }
 
         /// <summary>
         /// Triggered when the project starts loading.
@@ -71,11 +76,6 @@ namespace MonoGame.Tools.Pipeline
         /// </summary>
         void OnReferencesModified();
 
-        /// <summary>
-        /// Notify controller that a property of ContentItem has been modified.
-        /// </summary>        
-        void OnItemModified(ContentItem contentItem);
-
         void NewProject();
 
         void ImportProject();
@@ -102,9 +102,13 @@ namespace MonoGame.Tools.Pipeline
 
         void Include(string initialDirectory);
 
-        void Exclude(IEnumerable<ContentItem> items);        
+        void IncludeFolder(string initialDirectory);
+
+        void Exclude(IEnumerable<ContentItem> items, IEnumerable<string> folders);        
 
         void NewItem(string name, string location, ContentItemTemplate template);
+
+        void NewFolder(string name, string location);
 
         void AddAction(IProjectAction action);
 

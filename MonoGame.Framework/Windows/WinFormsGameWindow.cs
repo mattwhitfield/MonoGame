@@ -41,8 +41,10 @@ purpose and non-infringement.
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Windows.Forms;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
@@ -58,9 +60,12 @@ using XnaPoint = Microsoft.Xna.Framework.Point;
 
 namespace MonoGame.Framework
 {
-    class WinFormsGameWindow : GameWindow
+    class WinFormsGameWindow : GameWindow, IDisposable
     {
         internal WinFormsGameForm _form;
+
+        static private ReaderWriterLockSlim _allWindowsReaderWriterLockSlim = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
+        static private List<WinFormsGameWindow> _allWindows = new List<WinFormsGameWindow>();
 
         private readonly WinFormsGamePlatform _platform;
 
@@ -71,8 +76,6 @@ namespace MonoGame.Framework
         private bool _isMouseHidden;
 
         private bool _isMouseInBounds;
-
-        private MouseButtons _mouseDownButtonsState;
 
         #region Internal Properties
 
@@ -180,10 +183,7 @@ namespace MonoGame.Framework
             _form.StartPosition = FormStartPosition.CenterScreen;           
 
             // Capture mouse events.
-            _form.MouseDown += OnMouseDown;
-            _form.MouseMove += OnMouseState;
-            _form.MouseUp += OnMouseUp;
-            _form.MouseWheel += OnMouseState;
+            _form.MouseWheel += OnMouseScroll;
             _form.MouseEnter += OnMouseEnter;
             _form.MouseLeave += OnMouseLeave;            
 
@@ -196,15 +196,59 @@ namespace MonoGame.Framework
             _form.ClientSizeChanged += OnClientSizeChanged;
 
             _form.KeyPress += OnKeyPress;
+
+            RegisterToAllWindows();
+        }
+
+        ~WinFormsGameWindow()
+        {
+            Dispose(false);
+        }
+
+        private void RegisterToAllWindows()
+        {
+            _allWindowsReaderWriterLockSlim.EnterWriteLock();
+
+            try
+            {
+                _allWindows.Add(this);
+            }
+            finally
+            {
+                _allWindowsReaderWriterLockSlim.ExitWriteLock();
+            }
+        }
+
+        private void UnregisterFromAllWindows()
+        {
+            _allWindowsReaderWriterLockSlim.EnterWriteLock();
+
+            try
+            {
+                _allWindows.Remove(this);
+            }
+            finally
+            {
+                _allWindowsReaderWriterLockSlim.ExitWriteLock();
+            }
         }
 
         private void OnActivated(object sender, EventArgs eventArgs)
         {
-            var buttons = Control.MouseButtons;
-            var position = Control.MousePosition;
-            _mouseDownButtonsState = buttons;
-            OnMouseState(null, new MouseEventArgs(buttons, 0, position.X, position.Y, 0));
-
+#if (WINDOWS && DIRECTX)
+            if (Game.GraphicsDevice != null)
+            {
+                if (Game.graphicsDeviceManager.HardwareModeSwitch)
+                {
+                    if (!_platform.IsActive && Game.GraphicsDevice.PresentationParameters.IsFullScreen)
+                   {
+                       Game.GraphicsDevice.PresentationParameters.IsFullScreen = true;
+                       Game.GraphicsDevice.CreateSizeDependentResources(true);
+                        Game.GraphicsDevice.ApplyRenderTargets(null);
+                   }
+                }
+          }
+#endif
             _platform.IsActive = true;
         }
 
@@ -216,28 +260,35 @@ namespace MonoGame.Framework
                 KeyState.Clear();
         }
 
-        private void OnMouseDown(object sender, MouseEventArgs mouseEventArgs)
+        private void OnMouseScroll(object sender, MouseEventArgs mouseEventArgs)
         {
-            _mouseDownButtonsState |= mouseEventArgs.Button;
-            OnMouseState(sender, mouseEventArgs);
+            MouseState.ScrollWheelValue += mouseEventArgs.Delta;
         }
 
-        private void OnMouseUp(object sender, MouseEventArgs mouseEventArgs)
+        private void UpdateMouseState()
         {
-            _mouseDownButtonsState &= ~mouseEventArgs.Button;
-            OnMouseState(sender, mouseEventArgs);
-        }
+            // If we call the form client functions before the form has
+            // been made visible it will cause the wrong window size to
+            // be applied at startup.
+            if (!_form.Visible)
+                return;
 
-        private void OnMouseState(object sender, MouseEventArgs mouseEventArgs)
-        {
+            var clientPos = _form.PointToClient(Control.MousePosition);
+            var withinClient = _form.ClientRectangle.Contains(clientPos);
+            var buttons = Control.MouseButtons;
+
             var previousState = MouseState.LeftButton;
 
-            MouseState.X = mouseEventArgs.X;
-            MouseState.Y = mouseEventArgs.Y;
-            MouseState.LeftButton = (_mouseDownButtonsState & MouseButtons.Left) == MouseButtons.Left ? ButtonState.Pressed : ButtonState.Released;
-            MouseState.MiddleButton = (_mouseDownButtonsState & MouseButtons.Middle) == MouseButtons.Middle ? ButtonState.Pressed : ButtonState.Released;
-            MouseState.RightButton = (_mouseDownButtonsState & MouseButtons.Right) == MouseButtons.Right ? ButtonState.Pressed : ButtonState.Released;
-            MouseState.ScrollWheelValue += mouseEventArgs.Delta;
+            MouseState.X = clientPos.X;
+            MouseState.Y = clientPos.Y;
+            MouseState.LeftButton = (buttons & MouseButtons.Left) == MouseButtons.Left ? ButtonState.Pressed : ButtonState.Released;
+            MouseState.MiddleButton = (buttons & MouseButtons.Middle) == MouseButtons.Middle ? ButtonState.Pressed : ButtonState.Released;
+            MouseState.RightButton = (buttons & MouseButtons.Right) == MouseButtons.Right ? ButtonState.Pressed : ButtonState.Released;
+
+            // Don't process touch state if we're not active 
+            // and the mouse is within the client area.
+            if (!_platform.IsActive || !withinClient)
+                return;
             
             TouchLocationState? touchState = null;
             if (MouseState.LeftButton == ButtonState.Pressed)
@@ -336,9 +387,11 @@ namespace MonoGame.Framework
 
                 var newWidth = _form.ClientRectangle.Width;
                 var newHeight = _form.ClientRectangle.Height;
+
+#if !(WINDOWS && DIRECTX)
                 manager.PreferredBackBufferWidth = newWidth;
                 manager.PreferredBackBufferHeight = newHeight;
-
+#endif
                 if (manager.GraphicsDevice == null)
                     return;
             }
@@ -356,29 +409,65 @@ namespace MonoGame.Framework
 
         internal void RunLoop()
         {
-            Application.Idle += OnIdle;
-            Application.Run(_form);
-            Application.Idle -= OnIdle;
+            // https://bugzilla.novell.com/show_bug.cgi?id=487896
+            // Since there's existing bug from implementation with mono WinForms since 09'
+            // Application.Idle is not working as intended
+            // So we're just going to emulate Application.Run just like Microsoft implementation
+            _form.Show();
 
-            // We need to remove the last message in the message 
+            var nativeMsg = new NativeMessage();
+            while (_form != null && _form.IsDisposed == false)
+            {
+                if (PeekMessage(out nativeMsg, IntPtr.Zero, 0, 0, 0))
+                {
+                    Application.DoEvents();
+
+                    if (nativeMsg.msg == WM_QUIT)
+                        break;
+
+                    continue;
+                }
+
+                UpdateWindows();
+                Game.Tick();
+            }
+
+            // We need to remove the WM_QUIT message in the message 
             // pump as it will keep us from restarting on this 
             // same thread.
             //
             // This is critical for some NUnit runners which
             // typically will run all the tests on the same
             // process/thread.
-            NativeMessage msg;
-            PeekMessage(out msg, IntPtr.Zero, 0, 0, 1);
+
+            var msg = new NativeMessage();
+            do
+            {
+                if (msg.msg == WM_QUIT)
+                    break;
+
+                Thread.Sleep(100);
+            } 
+            while (PeekMessage(out msg, IntPtr.Zero, 0, 0, 1));
         }
 
-        private void OnIdle(object sender, EventArgs eventArgs)
+        internal void UpdateWindows()
         {
-            // While there are no pending messages 
-            // to be processed tick the game.
-            NativeMessage msg;
-            while (!PeekMessage(out msg, IntPtr.Zero, 0, 0, 0))
-                Game.Tick();
+            _allWindowsReaderWriterLockSlim.EnterReadLock();
+
+            try
+            {
+                // Update the mouse state for each window.
+                foreach (var window in _allWindows.Where(w => w.Game == Game))
+                    window.UpdateMouseState();
+            }
+            finally
+            {
+                _allWindowsReaderWriterLockSlim.ExitReadLock();
+            }
         }
+
+        private const uint WM_QUIT = 0x12;
 
         [StructLayout(LayoutKind.Sequential)]
         public struct NativeMessage
@@ -404,10 +493,20 @@ namespace MonoGame.Framework
 
         public void Dispose()
         {
-            if (_form != null)
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        void Dispose(bool disposing)
+        {
+            if (disposing)
             {
-                _form.Dispose();
-                _form = null;
+                if (_form != null)
+                {
+                    UnregisterFromAllWindows(); 
+                    _form.Dispose();
+                    _form = null;
+                }
             }
         }
 

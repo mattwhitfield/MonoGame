@@ -7,11 +7,13 @@ namespace Microsoft.Xna.Framework.Graphics
     public sealed partial class TextureCollection
     {
         private readonly Texture[] _textures;
+        private readonly bool _applyToVertexStage;
         private int _dirty;
 
-        internal TextureCollection(int maxTextures)
+        internal TextureCollection(int maxTextures, bool applyToVertexStage)
         {
             _textures = new Texture[maxTextures];
+            _applyToVertexStage = applyToVertexStage;
             _dirty = int.MaxValue;
             PlatformInit();
         }
@@ -52,60 +54,6 @@ namespace Microsoft.Xna.Framework.Graphics
         internal void SetTextures(GraphicsDevice device)
         {
             PlatformSetTextures(device);
-            if (_dirty == 0)
-                return;
-
-#if DIRECTX
-            // NOTE: We make the assumption here that the caller has
-            // locked the d3dContext for us to use.
-            var pixelShaderStage = device._d3dContext.PixelShader;
-#endif
-
-            for (var i = 0; i < _textures.Length; i++)
-            {
-                var mask = 1 << i;
-                if ((_dirty & mask) == 0)
-                    continue;
-
-                var tex = _textures[i];
-#if OPENGL
-                GL.ActiveTexture(TextureUnit.Texture0 + i);
-                GraphicsExtensions.CheckGLError();
-
-                // Clear the previous binding if the 
-                // target is different from the new one.
-                if (_targets[i] != 0 && (tex == null || _targets[i] != tex.glTarget))
-                {
-                    GL.BindTexture(_targets[i], 0);
-                    GraphicsExtensions.CheckGLError();
-                }
-
-                if (tex != null)
-                {
-                    _targets[i] = tex.glTarget;
-                    GL.BindTexture(tex.glTarget, tex.glTexture);
-                    GraphicsExtensions.CheckGLError();
-                }
-#elif DIRECTX
-                if (tex == null || tex.IsDisposed)
-                    pixelShaderStage.SetShaderResource(i, null);
-                else
-                    pixelShaderStage.SetShaderResource(i, tex.GetShaderResourceView());
-#elif PSM
-                // FIXME: 1d/3d textures
-                var texture2d = _textures[i] as Texture2D;
-                if (texture2d == null)
-                    device.Context.SetTexture(i, null);
-                else
-                    device.Context.SetTexture(i, texture2d._texture2D);
-#endif
-
-                _dirty &= ~mask;
-                if (_dirty == 0)
-                    break;
-            }
-
-            _dirty = 0;
         }
     }
 }
