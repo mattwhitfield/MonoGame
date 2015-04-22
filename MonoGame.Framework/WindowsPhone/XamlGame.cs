@@ -44,7 +44,8 @@ namespace MonoGame.Framework.WindowsPhone
                 var pointerPoint = args.CurrentPoint;
 
                 // To convert from DIPs (device independent pixels) to screen resolution pixels.
-                var dipFactor = DisplayProperties.LogicalDpi / 96.0f;
+                //var dipFactor = DisplayProperties.LogicalDpi / 96.0f;
+                var dipFactor = WindowsPhoneGameWindow.DipFactor;
                 var pos = new Vector2((float)pointerPoint.Position.X, (float)pointerPoint.Position.Y) * dipFactor;
                 _touchQueue.Enqueue((int)pointerPoint.PointerId, TouchLocationState.Pressed, pos);
             }
@@ -54,7 +55,8 @@ namespace MonoGame.Framework.WindowsPhone
                 var pointerPoint = args.CurrentPoint;
 
                 // To convert from DIPs (device independent pixels) to screen resolution pixels.
-                var dipFactor = DisplayProperties.LogicalDpi / 96.0f;
+                //var dipFactor = DisplayProperties.LogicalDpi / 96.0f;
+                var dipFactor = WindowsPhoneGameWindow.DipFactor;
                 var pos = new Vector2((float)pointerPoint.Position.X, (float)pointerPoint.Position.Y) * dipFactor;
                 _touchQueue.Enqueue((int)pointerPoint.PointerId, TouchLocationState.Moved, pos);
             }
@@ -64,7 +66,8 @@ namespace MonoGame.Framework.WindowsPhone
                 var pointerPoint = args.CurrentPoint;
 
                 // To convert from DIPs (device independent pixels) to screen resolution pixels.
-                var dipFactor = DisplayProperties.LogicalDpi / 96.0f;
+                //var dipFactor = DisplayProperties.LogicalDpi / 96.0f;
+                var dipFactor = WindowsPhoneGameWindow.DipFactor;
                 var pos = new Vector2((float)pointerPoint.Position.X, (float)pointerPoint.Position.Y) * dipFactor;
                 _touchQueue.Enqueue((int)pointerPoint.PointerId, TouchLocationState.Released, pos);
             }
@@ -92,7 +95,12 @@ namespace MonoGame.Framework.WindowsPhone
 
             public override void Draw(Device device, DeviceContext context, RenderTargetView renderTargetView)
             {
-                _surfaceUpdateHandler.Draw(device, context, renderTargetView);
+                try
+                {
+                    _surfaceUpdateHandler.Draw(device, context, renderTargetView);
+                }
+                catch
+                { }
             }
 
             public override void PrepareResources(DateTime presentTargetTime, ref Size2F desiredRenderTargetSize)
@@ -139,6 +147,7 @@ namespace MonoGame.Framework.WindowsPhone
             WindowsPhoneGamePlatform.LaunchParameters = launchParameters;
             WindowsPhoneGameWindow.Width = ((FrameworkElement)drawingSurface).ActualWidth;
             WindowsPhoneGameWindow.Height = ((FrameworkElement)drawingSurface).ActualHeight;
+            WindowsPhoneGameWindow.DipFactor = (float)Math.Max(WindowsPhoneGameWindow.Width, WindowsPhoneGameWindow.Height) / 800.0f;
             WindowsPhoneGameWindow.Page = page;
 
             Microsoft.Xna.Framework.Audio.SoundEffect.InitializeSoundEffect();

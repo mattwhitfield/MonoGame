@@ -123,13 +123,12 @@ namespace MonoGame.Utilities
     /// </para>
     ///
     /// <para>
-    /// This class is similar to <see cref="DeflateStream"/>, except that it adds the
+    /// This class is similar to DeflateStream, except that it adds the
     /// RFC1950 header and trailer bytes to a compressed stream when compressing, or expects
     /// the RFC1950 header and trailer bytes when decompressing.  It is also similar to the
     /// <see cref="GZipStream"/>.
     /// </para>
     /// </remarks>
-    /// <seealso cref="DeflateStream" />
     /// <seealso cref="GZipStream" />
     public class ZlibStream : Stream
     {
@@ -8379,7 +8378,7 @@ namespace MonoGame.Utilities
         /// </summary>
         /// <remarks>
         ///   <para>
-        ///     Set this at any point before calling <see cref="Close()"/>.
+        ///     Set this at any point before calling Close().
         ///   </para>
         /// </remarks>
         internal bool LeaveOpen

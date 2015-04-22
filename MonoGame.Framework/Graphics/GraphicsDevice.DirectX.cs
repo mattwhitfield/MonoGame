@@ -42,15 +42,11 @@ namespace Microsoft.Xna.Framework.Graphics
         internal SharpDX.Direct3D11.RenderTargetView _renderTargetView;
         internal SharpDX.Direct3D11.DepthStencilView _depthStencilView;
 
-<<<<<<< HEAD
+#if WINDOWS_STOREAPP || WINDOWS_UAP
+
         SharpDX.DXGI.Format _msaaTargetBufferFormat;
         SharpDX.Direct3D11.Texture2D _msaaTargetBuffer;
         SharpDX.Direct3D11.Texture2D _backBuffer;
-
-#if WINDOWS_STOREAPP
-=======
-#if WINDOWS_STOREAPP || WINDOWS_UAP
->>>>>>> fc0f383640157daf17d0db9eadcf0b28fa45f018
 
         // Declare Direct2D Objects
         SharpDX.Direct2D1.Factory1 _d2dFactory;
@@ -90,9 +86,10 @@ namespace Microsoft.Xna.Framework.Graphics
         private readonly Dictionary<int, DynamicVertexBuffer> _userVertexBuffers = new Dictionary<int, DynamicVertexBuffer>();
 
         private readonly Dictionary<IndexElementSize, DynamicIndexBuffer> _userIndexBuffers = new Dictionary<IndexElementSize, DynamicIndexBuffer>();
-        FeatureLevel _featureLevel;
 
 #if WINDOWS_STOREAPP || WINDOWS_UAP
+
+        FeatureLevel _featureLevel;
 
         internal float Dpi
         {
@@ -112,7 +109,7 @@ namespace Microsoft.Xna.Framework.Graphics
 
 #endif
 
-	/// <summary>
+        /// <summary>
         /// Returns a handle to internal device object. Valid only on DirectX platforms.
         /// For usage, convert this to SharpDX.Direct3D11.Device.
         /// </summary>

@@ -23,21 +23,12 @@ namespace Microsoft.Xna.Framework.Graphics
             return ContentLost != null;
         }
 
-<<<<<<< HEAD
-        public RenderTarget2D (GraphicsDevice graphicsDevice, int width, int height, bool mipMap, SurfaceFormat preferredFormat, DepthFormat preferredDepthFormat, int preferredMultiSampleCount, RenderTargetUsage usage, bool shared)
-            : base(graphicsDevice, width, height, mipMap, preferredFormat, SurfaceType.RenderTarget, shared, preferredMultiSampleCount)
-		{
-			DepthStencilFormat = preferredDepthFormat;
-			MultiSampleCount = preferredMultiSampleCount;
-			RenderTargetUsage = usage;
-=======
 	    public RenderTarget2D(GraphicsDevice graphicsDevice, int width, int height, bool mipMap, SurfaceFormat preferredFormat, DepthFormat preferredDepthFormat, int preferredMultiSampleCount, RenderTargetUsage usage, bool shared, int arraySize)
-	        : base(graphicsDevice, width, height, mipMap, preferredFormat, SurfaceType.RenderTarget, shared, arraySize)
+	        : base(graphicsDevice, width, height, mipMap, preferredFormat, SurfaceType.RenderTarget, shared, arraySize, preferredMultiSampleCount)
 	    {
             DepthStencilFormat = preferredDepthFormat;
             MultiSampleCount = preferredMultiSampleCount;
             RenderTargetUsage = usage;
->>>>>>> fc0f383640157daf17d0db9eadcf0b28fa45f018
 
             PlatformConstruct(graphicsDevice, width, height, mipMap, preferredFormat, preferredDepthFormat, preferredMultiSampleCount, usage, shared);
 	    }

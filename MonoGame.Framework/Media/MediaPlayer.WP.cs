@@ -169,15 +169,7 @@ namespace Microsoft.Xna.Framework.Media
 
         private static bool PlatformGetGameHasControl()
         {
-            bool gameHasControl;
-            try
-            {
-                gameHasControl = MsMediaPlayer.GameHasControl;
-            }
-            catch (TypeInitializationException exc)
-            {                
-                throw;
-            }
+            bool gameHasControl = MsMediaPlayer.GameHasControl;
             return State == MediaState.Playing || gameHasControl;
         }
 

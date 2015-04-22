@@ -7,7 +7,7 @@ using System;
 namespace Microsoft.Xna.Framework.Graphics
 {
     /// <summary>
-    /// Defines the buffers for clearing when calling <see cref="GraphicsDevice.Clear"/> operation.
+    /// Defines the buffers for clearing when calling GraphicsDevice.Clear operation.
     /// </summary>
     [Flags]
     public enum ClearOptions

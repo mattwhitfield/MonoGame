@@ -28,43 +28,33 @@ namespace Microsoft.Xna.Framework.Graphics
             }
         }
 
-<<<<<<< HEAD
         public Texture2D(GraphicsDevice graphicsDevice, int width, int height)
-=======
-        public Texture2D(GraphicsDevice graphicsDevice, int width, int height)
->>>>>>> fc0f383640157daf17d0db9eadcf0b28fa45f018
-            : this(graphicsDevice, width, height, false, SurfaceFormat.Color, SurfaceType.Texture, false, 1)
+            : this(graphicsDevice, width, height, false, SurfaceFormat.Color, SurfaceType.Texture, false, 1, 1)
         {
         }
 
         public Texture2D(GraphicsDevice graphicsDevice, int width, int height, bool mipmap, SurfaceFormat format)
-            : this(graphicsDevice, width, height, mipmap, format, SurfaceType.Texture, false, 1)
+            : this(graphicsDevice, width, height, mipmap, format, SurfaceType.Texture, false, 1, 1)
         {
         }
 
         public Texture2D(GraphicsDevice graphicsDevice, int width, int height, bool mipmap, SurfaceFormat format, int arraySize)
-            : this(graphicsDevice, width, height, mipmap, format, SurfaceType.Texture, false, arraySize)
+            : this(graphicsDevice, width, height, mipmap, format, SurfaceType.Texture, false, arraySize, 1)
         {
             
         }
 
         internal Texture2D(GraphicsDevice graphicsDevice, int width, int height, bool mipmap, SurfaceFormat format, SurfaceType type)
-            : this(graphicsDevice, width, height, mipmap, format, type, false, 1)
+            : this(graphicsDevice, width, height, mipmap, format, type, false, 1, 1)
         {
-<<<<<<< HEAD
         }
 
         protected Texture2D(GraphicsDevice graphicsDevice, int width, int height, bool mipmap, SurfaceFormat format, SurfaceType type, bool shared)
-            : this(graphicsDevice, width, height, mipmap, format, type, shared, 1)
+            : this(graphicsDevice, width, height, mipmap, format, type, shared, 1, 1)
         {
         }
 
-        protected Texture2D(GraphicsDevice graphicsDevice, int width, int height, bool mipmap, SurfaceFormat format, SurfaceType type, bool shared, int preferredMultiSampleCount)
-=======
-        }
-
-        protected Texture2D(GraphicsDevice graphicsDevice, int width, int height, bool mipmap, SurfaceFormat format, SurfaceType type, bool shared, int arraySize)
->>>>>>> fc0f383640157daf17d0db9eadcf0b28fa45f018
+        protected Texture2D(GraphicsDevice graphicsDevice, int width, int height, bool mipmap, SurfaceFormat format, SurfaceType type, bool shared, int arraySize, int preferredMultiSampleCount)
 		{
             if (graphicsDevice == null)
                 throw new ArgumentNullException("Graphics Device Cannot Be Null");
