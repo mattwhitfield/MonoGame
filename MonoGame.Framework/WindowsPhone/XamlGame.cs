@@ -44,10 +44,30 @@ namespace MonoGame.Framework.WindowsPhone
                 var pointerPoint = args.CurrentPoint;
 
                 // To convert from DIPs (device independent pixels) to screen resolution pixels.
-                //var dipFactor = DisplayProperties.LogicalDpi / 96.0f;
-                var dipFactor = WindowsPhoneGameWindow.DipFactor;
+                var dipFactor = DipFactor();
                 var pos = new Vector2((float)pointerPoint.Position.X, (float)pointerPoint.Position.Y) * dipFactor;
                 _touchQueue.Enqueue((int)pointerPoint.PointerId, TouchLocationState.Pressed, pos);
+            }
+
+            private static float DipFactor()
+            {
+                var dipFactor = DisplayProperties.LogicalDpi / 96.0f;
+                switch (DisplayProperties.ResolutionScale)
+                {
+                    case ResolutionScale.Scale140Percent:
+                        dipFactor *= 1.4f;
+                        break;
+                    case ResolutionScale.Scale150Percent:
+                        dipFactor *= 1.5f;
+                        break;
+                    case ResolutionScale.Scale160Percent:
+                        dipFactor *= 1.6f;
+                        break;
+                    case ResolutionScale.Scale180Percent:
+                        dipFactor *= 1.8f;
+                        break;
+                }
+                return dipFactor;
             }
 
             private void OnPointerMoved(DrawingSurfaceManipulationHost sender, PointerEventArgs args)
@@ -55,8 +75,7 @@ namespace MonoGame.Framework.WindowsPhone
                 var pointerPoint = args.CurrentPoint;
 
                 // To convert from DIPs (device independent pixels) to screen resolution pixels.
-                //var dipFactor = DisplayProperties.LogicalDpi / 96.0f;
-                var dipFactor = WindowsPhoneGameWindow.DipFactor;
+                var dipFactor = DipFactor();
                 var pos = new Vector2((float)pointerPoint.Position.X, (float)pointerPoint.Position.Y) * dipFactor;
                 _touchQueue.Enqueue((int)pointerPoint.PointerId, TouchLocationState.Moved, pos);
             }
@@ -66,8 +85,7 @@ namespace MonoGame.Framework.WindowsPhone
                 var pointerPoint = args.CurrentPoint;
 
                 // To convert from DIPs (device independent pixels) to screen resolution pixels.
-                //var dipFactor = DisplayProperties.LogicalDpi / 96.0f;
-                var dipFactor = WindowsPhoneGameWindow.DipFactor;
+                var dipFactor = DipFactor();
                 var pos = new Vector2((float)pointerPoint.Position.X, (float)pointerPoint.Position.Y) * dipFactor;
                 _touchQueue.Enqueue((int)pointerPoint.PointerId, TouchLocationState.Released, pos);
             }
@@ -147,7 +165,6 @@ namespace MonoGame.Framework.WindowsPhone
             WindowsPhoneGamePlatform.LaunchParameters = launchParameters;
             WindowsPhoneGameWindow.Width = ((FrameworkElement)drawingSurface).ActualWidth;
             WindowsPhoneGameWindow.Height = ((FrameworkElement)drawingSurface).ActualHeight;
-            WindowsPhoneGameWindow.DipFactor = (float)Math.Max(WindowsPhoneGameWindow.Width, WindowsPhoneGameWindow.Height) / 800.0f;
             WindowsPhoneGameWindow.Page = page;
 
             Microsoft.Xna.Framework.Audio.SoundEffect.InitializeSoundEffect();

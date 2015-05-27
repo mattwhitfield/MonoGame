@@ -76,7 +76,6 @@ namespace MonoGame.Framework.WindowsPhone
         {
             WindowsPhoneGameWindow.Width = desiredRenderTargetSize.Width;
             WindowsPhoneGameWindow.Height = desiredRenderTargetSize.Height;
-            WindowsPhoneGameWindow.DipFactor = (float)Math.Max(WindowsPhoneGameWindow.Width, WindowsPhoneGameWindow.Height) / 800.0f;
         }
     }
 }

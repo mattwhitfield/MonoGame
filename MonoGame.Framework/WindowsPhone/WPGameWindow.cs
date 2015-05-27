@@ -62,7 +62,6 @@ namespace MonoGame.Framework.WindowsPhone
 
         static internal double Width;
         static internal double Height;
-        static internal float DipFactor;
         static internal PhoneApplicationPage Page;
 
         internal bool IsExiting { get; set; }
